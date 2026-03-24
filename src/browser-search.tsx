@@ -167,7 +167,7 @@ export default function BrowserSearch() {
       {tabs.length > 0 && (
         <List.Section title="Tabs">
           {tabs.map((item) => (
-            <BrowserListItem key={`${item.type}-${item.url}`} item={item} />
+            <BrowserListItem key={`tab-${item.switchArg}`} item={item} />
           ))}
         </List.Section>
       )}
@@ -218,7 +218,7 @@ function BrowserListItem({ item }: { item: BrowserItem }) {
                 icon={Icon.ArrowRight}
                 onAction={async () => {
                   try {
-                    switchTab(item.switchArg!);
+                    await switchTab(item.switchArg!);
                     await closeMainWindow();
                   } catch {
                     await showToast({
@@ -233,7 +233,7 @@ function BrowserListItem({ item }: { item: BrowserItem }) {
                 icon={Icon.Globe}
                 onAction={async () => {
                   try {
-                    openInBrowser(item.url);
+                    await openInBrowser(item.url);
                   } catch {
                     await showToast({
                       style: Toast.Style.Failure,

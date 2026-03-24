@@ -1,9 +1,8 @@
-import { execFile, execFileSync } from "child_process";
+import { execFile } from "child_process";
 
 // We test the pure parsing logic by mocking execFile
 jest.mock("child_process", () => ({
   execFile: jest.fn(),
-  execFileSync: jest.fn(),
 }));
 
 const execFileMock = execFile as jest.MockedFunction<typeof execFile>;
@@ -181,20 +180,30 @@ describe("fetchTabs", () => {
 });
 
 describe("switchTab", () => {
-  it("calls mozeidon tabs switch then opens Zen", () => {
-    switchTab("1:42");
-    expect(execFileSync).toHaveBeenCalledWith("mozeidon", [
-      "tabs",
-      "switch",
-      "1:42",
-    ]);
-    expect(execFileSync).toHaveBeenCalledWith("open", ["-a", "Zen"]);
+  it("calls mozeidon tabs switch then opens Zen", async () => {
+    mockStdout("");
+    await switchTab("1:42");
+    expect(execFileMock).toHaveBeenCalledWith(
+      "mozeidon",
+      ["tabs", "switch", "1:42"],
+      expect.any(Function),
+    );
+    expect(execFileMock).toHaveBeenCalledWith(
+      "open",
+      ["-a", "Zen"],
+      expect.any(Function),
+    );
   });
 });
 
 describe("openInBrowser", () => {
-  it("calls open with the url", () => {
-    openInBrowser("https://example.com");
-    expect(execFileSync).toHaveBeenCalledWith("open", ["https://example.com"]);
+  it("calls open with the url", async () => {
+    mockStdout("");
+    await openInBrowser("https://example.com");
+    expect(execFileMock).toHaveBeenCalledWith(
+      "open",
+      ["https://example.com"],
+      expect.any(Function),
+    );
   });
 });

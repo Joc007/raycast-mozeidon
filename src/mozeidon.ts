@@ -1,4 +1,4 @@
-import { execFile, execFileSync } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import type {
   BrowserItem,
@@ -63,11 +63,11 @@ export async function fetchHistory(): Promise<BrowserItem[]> {
   }));
 }
 
-export function switchTab(switchArg: string): void {
-  execFileSync("mozeidon", ["tabs", "switch", switchArg]);
-  execFileSync("open", ["-a", BROWSER_APP]);
+export async function switchTab(switchArg: string): Promise<void> {
+  await execFileAsync("mozeidon", ["tabs", "switch", switchArg]);
+  await execFileAsync("open", ["-a", BROWSER_APP]);
 }
 
-export function openInBrowser(url: string): void {
-  execFileSync("open", [url]);
+export async function openInBrowser(url: string): Promise<void> {
+  await execFileAsync("open", [url]);
 }
