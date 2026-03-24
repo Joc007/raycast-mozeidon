@@ -22,7 +22,7 @@ type State =
   | { status: "loading" }
   | { status: "enoent" }
   | { status: "no-profile" }
-  | { status: "all-failed" }
+  | { status: "all-failed"; detail?: string }
   | {
       status: "ready";
       tabs: BrowserItem[];
@@ -36,6 +36,7 @@ export default function BrowserSearch() {
 
   useEffect(() => {
     setState({ status: "loading" });
+    let cancelled = false;
 
     async function init() {
       // Step 1: Check profile
@@ -43,60 +44,59 @@ export default function BrowserSearch() {
       try {
         hasProfile = await checkProfile();
       } catch (error: unknown) {
-        const code = (error as NodeJS.ErrnoException).code;
-        setState(
-          code === "ENOENT" ? { status: "enoent" } : { status: "all-failed" },
-        );
+        if (cancelled) return;
+        const err = error as NodeJS.ErrnoException;
+        if (err.code === "ENOENT") { setState({ status: "enoent" }); return; }
+        setState({ status: "all-failed", detail: `checkProfile: ${err.code} ${err.message}` });
         return;
       }
+      if (cancelled) return;
 
       if (!hasProfile) {
         setState({ status: "no-profile" });
         return;
       }
 
-      // Step 2: Parallel fetch — use allSettled so one failure doesn't cancel others
-      const [tabsResult, bookmarksResult, historyResult] =
-        await Promise.allSettled([
-          fetchTabs(),
-          fetchBookmarks(),
-          fetchHistory(),
-        ]);
+      // Step 2: Sequential fetch — the browser extension handles one socket
+      // connection at a time; parallel calls cause some to hang indefinitely.
+      let tabs: BrowserItem[] = [];
+      let tabsErr: Error | null = null;
+      try { tabs = await fetchTabs(); } catch (e) { tabsErr = e as Error; }
+      if (cancelled) return;
 
-      const tabs = tabsResult.status === "fulfilled" ? tabsResult.value : [];
-      const bookmarks =
-        bookmarksResult.status === "fulfilled" ? bookmarksResult.value : [];
-      const history =
-        historyResult.status === "fulfilled" ? historyResult.value : [];
+      let bookmarks: BrowserItem[] = [];
+      let bookmarksErr: Error | null = null;
+      try { bookmarks = await fetchBookmarks(); } catch (e) { bookmarksErr = e as Error; }
+      if (cancelled) return;
+
+      let history: BrowserItem[] = [];
+      let historyErr: Error | null = null;
+      try { history = await fetchHistory(); } catch (e) { historyErr = e as Error; }
+      if (cancelled) return;
 
       // Toast for each partial failure
-      if (tabsResult.status === "rejected") {
+      if (tabsErr) {
         await showToast({
           style: Toast.Style.Failure,
           title: "Could not load tabs",
           message: "Is the mozeidon extension active in Zen?",
         });
       }
-      if (bookmarksResult.status === "rejected") {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Could not load bookmarks",
-        });
+      if (bookmarksErr) {
+        await showToast({ style: Toast.Style.Failure, title: "Could not load bookmarks" });
       }
-      if (historyResult.status === "rejected") {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Could not load history",
-        });
+      if (historyErr) {
+        await showToast({ style: Toast.Style.Failure, title: "Could not load history" });
       }
 
       // All three failed → show empty view with retry
-      if (
-        tabsResult.status === "rejected" &&
-        bookmarksResult.status === "rejected" &&
-        historyResult.status === "rejected"
-      ) {
-        setState({ status: "all-failed" });
+      if (tabsErr && bookmarksErr && historyErr) {
+        const details = [
+          tabsErr && `tabs: ${(tabsErr as NodeJS.ErrnoException).code ?? ""} ${tabsErr.message}`,
+          bookmarksErr && `bookmarks: ${(bookmarksErr as NodeJS.ErrnoException).code ?? ""} ${bookmarksErr.message}`,
+          historyErr && `history: ${(historyErr as NodeJS.ErrnoException).code ?? ""} ${historyErr.message}`,
+        ].filter(Boolean).join(" | ");
+        setState({ status: "all-failed", detail: details });
         return;
       }
 
@@ -104,6 +104,7 @@ export default function BrowserSearch() {
     }
 
     init();
+    return () => { cancelled = true; };
   }, [retryCount]);
 
   const retry = () => setRetryCount((c) => c + 1);
@@ -146,7 +147,7 @@ export default function BrowserSearch() {
       <List>
         <List.EmptyView
           title="Could not load browser data"
-          description="Failed to fetch tabs, bookmarks, and history."
+          description={state.detail ?? "Failed to fetch tabs, bookmarks, and history."}
           actions={
             <ActionPanel>
               <Action title="Retry" onAction={retry} />

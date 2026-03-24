@@ -1,39 +1,60 @@
-import { execFile } from "child_process";
+import { spawn } from "child_process";
+import { EventEmitter } from "events";
 
-// We test the pure parsing logic by mocking execFile
+// We test the pure parsing logic by mocking spawn
 jest.mock("child_process", () => ({
-  execFile: jest.fn(),
+  spawn: jest.fn(),
 }));
 
-const execFileMock = execFile as jest.MockedFunction<typeof execFile>;
+const spawnMock = spawn as jest.MockedFunction<typeof spawn>;
 
-// Helper: make execFile resolve with stdout
+function makeChildProcess(stdout: string, exitCode: number) {
+  const child = new EventEmitter() as NodeJS.EventEmitter & {
+    stdout: EventEmitter;
+    stderr: EventEmitter;
+    kill: jest.Mock;
+  };
+  child.stdout = new EventEmitter();
+  child.stderr = new EventEmitter();
+  child.kill = jest.fn();
+
+  setImmediate(() => {
+    child.stdout.emit("data", Buffer.from(stdout));
+    child.emit("close", exitCode);
+  });
+
+  return child;
+}
+
+// Helper: make spawn resolve with stdout (exit 0)
 function mockStdout(stdout: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (execFileMock as jest.MockedFunction<any>).mockImplementation(
-    (...args: unknown[]) => {
-      const callback = args[args.length - 1] as (
-        err: null,
-        result: { stdout: string },
-      ) => void;
-      callback(null, { stdout });
-    },
+  (spawnMock as jest.MockedFunction<any>).mockImplementation(() =>
+    makeChildProcess(stdout, 0),
   );
 }
 
-// Helper: make execFile reject
+// Helper: make spawn emit an error event (e.g. ENOENT)
 function mockError(code: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (execFileMock as jest.MockedFunction<any>).mockImplementation(
-    (...args: unknown[]) => {
-      const callback = args[args.length - 1] as (
-        err: NodeJS.ErrnoException,
-      ) => void;
-      const err = new Error("Command failed") as NodeJS.ErrnoException;
+  (spawnMock as jest.MockedFunction<any>).mockImplementation(() => {
+    const child = new EventEmitter() as NodeJS.EventEmitter & {
+      stdout: EventEmitter;
+      stderr: EventEmitter;
+      kill: jest.Mock;
+    };
+    child.stdout = new EventEmitter();
+    child.stderr = new EventEmitter();
+    child.kill = jest.fn();
+
+    setImmediate(() => {
+      const err = new Error("spawn failed") as NodeJS.ErrnoException;
       err.code = code;
-      callback(err);
-    },
-  );
+      child.emit("error", err);
+    });
+
+    return child;
+  });
 }
 
 import {
@@ -183,15 +204,15 @@ describe("switchTab", () => {
   it("calls mozeidon tabs switch then opens Zen", async () => {
     mockStdout("");
     await switchTab("1:42");
-    expect(execFileMock).toHaveBeenCalledWith(
-      "mozeidon",
+    expect(spawnMock).toHaveBeenCalledWith(
+      expect.stringContaining("mozeidon"),
       ["tabs", "switch", "1:42"],
-      expect.any(Function),
+      expect.any(Object),
     );
-    expect(execFileMock).toHaveBeenCalledWith(
+    expect(spawnMock).toHaveBeenCalledWith(
       "open",
       ["-a", "Zen"],
-      expect.any(Function),
+      expect.any(Object),
     );
   });
 });
@@ -200,10 +221,10 @@ describe("openInBrowser", () => {
   it("calls open with the url", async () => {
     mockStdout("");
     await openInBrowser("https://example.com");
-    expect(execFileMock).toHaveBeenCalledWith(
+    expect(spawnMock).toHaveBeenCalledWith(
       "open",
       ["https://example.com"],
-      expect.any(Function),
+      expect.any(Object),
     );
   });
 });
