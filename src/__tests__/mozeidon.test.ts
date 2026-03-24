@@ -11,7 +11,8 @@ const execFileMock = execFile as jest.MockedFunction<typeof execFile>;
 
 // Helper: make execFile resolve with stdout
 function mockStdout(stdout: string) {
-  execFileMock.mockImplementation((...args: unknown[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (execFileMock as jest.MockedFunction<any>).mockImplementation((...args: unknown[]) => {
     const callback = args[args.length - 1] as (err: null, result: { stdout: string }) => void;
     callback(null, { stdout });
   });
@@ -19,7 +20,8 @@ function mockStdout(stdout: string) {
 
 // Helper: make execFile reject
 function mockError(code: string) {
-  execFileMock.mockImplementation((...args: unknown[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (execFileMock as jest.MockedFunction<any>).mockImplementation((...args: unknown[]) => {
     const callback = args[args.length - 1] as (err: NodeJS.ErrnoException) => void;
     const err = new Error("Command failed") as NodeJS.ErrnoException;
     err.code = code;
