@@ -27,7 +27,7 @@ function mockError(code: string) {
   });
 }
 
-import { checkProfile, fetchTabs, fetchBookmarks, fetchHistory } from "../mozeidon";
+import { checkProfile, fetchTabs, fetchBookmarks, fetchHistory, switchTab, openInBrowser } from "../mozeidon";
 
 describe("checkProfile", () => {
   it("returns true when profiles data is non-empty", async () => {
@@ -43,6 +43,11 @@ describe("checkProfile", () => {
   it("throws ENOENT when mozeidon not in PATH", async () => {
     mockError("ENOENT");
     await expect(checkProfile()).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("throws when CLI returns error JSON", async () => {
+    mockStdout(JSON.stringify({ error: "unexpected error" }));
+    await expect(checkProfile()).rejects.toThrow("unexpected error");
   });
 });
 
@@ -104,5 +109,22 @@ describe("fetchTabs", () => {
       url: "https://claude.ai",
       switchArg: "1:42",
     });
+  });
+});
+
+describe("switchTab", () => {
+  it("calls mozeidon tabs switch then opens Zen", () => {
+    const execFileSync = require("child_process").execFileSync as jest.MockedFunction<typeof import("child_process").execFileSync>;
+    switchTab("1:42");
+    expect(execFileSync).toHaveBeenCalledWith("mozeidon", ["tabs", "switch", "1:42"]);
+    expect(execFileSync).toHaveBeenCalledWith("open", ["-a", "Zen"]);
+  });
+});
+
+describe("openInBrowser", () => {
+  it("calls open with the url", () => {
+    const execFileSync = require("child_process").execFileSync as jest.MockedFunction<typeof import("child_process").execFileSync>;
+    openInBrowser("https://example.com");
+    expect(execFileSync).toHaveBeenCalledWith("open", ["https://example.com"]);
   });
 });

@@ -4,6 +4,10 @@ import type { BrowserItem, MozeidonResponse, Tab, Bookmark, HistoryItem } from "
 
 const execFileAsync = promisify(execFile);
 
+const BROWSER_APP = "Zen"; // change if using a different browser
+const BOOKMARKS_LIMIT = "500";
+const HISTORY_LIMIT = "300";
+
 async function run(args: string[]): Promise<string> {
   const { stdout } = await execFileAsync("mozeidon", args);
   return stdout;
@@ -18,6 +22,7 @@ function parseResponse<T>(stdout: string): T[] {
 export async function checkProfile(): Promise<boolean> {
   const stdout = await run(["profiles", "get"]);
   const response: MozeidonResponse<unknown> = JSON.parse(stdout);
+  if (response.error) throw new Error(response.error);
   return (response.data?.length ?? 0) > 0;
 }
 
@@ -33,7 +38,7 @@ export async function fetchTabs(): Promise<BrowserItem[]> {
 }
 
 export async function fetchBookmarks(): Promise<BrowserItem[]> {
-  const stdout = await run(["bookmarks", "-m", "500"]);
+  const stdout = await run(["bookmarks", "-m", BOOKMARKS_LIMIT]);
   const bookmarks = parseResponse<Bookmark>(stdout);
   return bookmarks.map((b) => ({
     type: "bookmark" as const,
@@ -43,7 +48,7 @@ export async function fetchBookmarks(): Promise<BrowserItem[]> {
 }
 
 export async function fetchHistory(): Promise<BrowserItem[]> {
-  const stdout = await run(["history", "-m", "300"]);
+  const stdout = await run(["history", "-m", HISTORY_LIMIT]);
   const items = parseResponse<HistoryItem>(stdout);
   return items.map((h) => ({
     type: "history" as const,
@@ -54,7 +59,7 @@ export async function fetchHistory(): Promise<BrowserItem[]> {
 
 export function switchTab(switchArg: string): void {
   execFileSync("mozeidon", ["tabs", "switch", switchArg]);
-  execFileSync("open", ["-a", "Zen"]);
+  execFileSync("open", ["-a", BROWSER_APP]);
 }
 
 export function openInBrowser(url: string): void {
