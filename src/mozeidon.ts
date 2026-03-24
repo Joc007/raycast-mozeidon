@@ -14,9 +14,10 @@ const MOZEIDON = "/opt/homebrew/bin/mozeidon"; // Raycast doesn't inherit shell 
 const BROWSER_APP = "Zen"; // change if using a different browser
 const BOOKMARKS_LIMIT = "500";
 const HISTORY_LIMIT = "300";
+const CLI_TIMEOUT_MS = 8_000; // tabs get can hang if browser extension is unreachable
 
 async function run(args: string[]): Promise<string> {
-  const { stdout } = await execFileAsync(MOZEIDON, args);
+  const { stdout } = await execFileAsync(MOZEIDON, args, { timeout: CLI_TIMEOUT_MS });
   return stdout;
 }
 
