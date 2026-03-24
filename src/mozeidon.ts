@@ -10,12 +10,13 @@ import type {
 
 const execFileAsync = promisify(execFile);
 
+const MOZEIDON = "/opt/homebrew/bin/mozeidon"; // Raycast doesn't inherit shell PATH
 const BROWSER_APP = "Zen"; // change if using a different browser
 const BOOKMARKS_LIMIT = "500";
 const HISTORY_LIMIT = "300";
 
 async function run(args: string[]): Promise<string> {
-  const { stdout } = await execFileAsync("mozeidon", args);
+  const { stdout } = await execFileAsync(MOZEIDON, args);
   return stdout;
 }
 
@@ -64,7 +65,7 @@ export async function fetchHistory(): Promise<BrowserItem[]> {
 }
 
 export async function switchTab(switchArg: string): Promise<void> {
-  await execFileAsync("mozeidon", ["tabs", "switch", switchArg]);
+  await execFileAsync(MOZEIDON, ["tabs", "switch", switchArg]);
   await execFileAsync("open", ["-a", BROWSER_APP]);
 }
 
