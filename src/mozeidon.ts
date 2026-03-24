@@ -1,6 +1,12 @@
 import { execFile, execFileSync } from "child_process";
 import { promisify } from "util";
-import type { BrowserItem, MozeidonResponse, Tab, Bookmark, HistoryItem } from "./types";
+import type {
+  BrowserItem,
+  MozeidonResponse,
+  Tab,
+  Bookmark,
+  HistoryItem,
+} from "./types";
 
 const execFileAsync = promisify(execFile);
 

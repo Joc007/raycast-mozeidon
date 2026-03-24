@@ -8,7 +8,14 @@ import {
   closeMainWindow,
 } from "@raycast/api";
 import { useState, useEffect } from "react";
-import { checkProfile, fetchTabs, fetchBookmarks, fetchHistory, switchTab, openInBrowser } from "./mozeidon";
+import {
+  checkProfile,
+  fetchTabs,
+  fetchBookmarks,
+  fetchHistory,
+  switchTab,
+  openInBrowser,
+} from "./mozeidon";
 import type { BrowserItem } from "./types";
 
 type State =
@@ -16,7 +23,12 @@ type State =
   | { status: "enoent" }
   | { status: "no-profile" }
   | { status: "all-failed" }
-  | { status: "ready"; tabs: BrowserItem[]; bookmarks: BrowserItem[]; history: BrowserItem[] };
+  | {
+      status: "ready";
+      tabs: BrowserItem[];
+      bookmarks: BrowserItem[];
+      history: BrowserItem[];
+    };
 
 export default function BrowserSearch() {
   const [state, setState] = useState<State>({ status: "loading" });
@@ -32,7 +44,9 @@ export default function BrowserSearch() {
         hasProfile = await checkProfile();
       } catch (error: unknown) {
         const code = (error as NodeJS.ErrnoException).code;
-        setState(code === "ENOENT" ? { status: "enoent" } : { status: "all-failed" });
+        setState(
+          code === "ENOENT" ? { status: "enoent" } : { status: "all-failed" },
+        );
         return;
       }
 
@@ -42,15 +56,18 @@ export default function BrowserSearch() {
       }
 
       // Step 2: Parallel fetch — use allSettled so one failure doesn't cancel others
-      const [tabsResult, bookmarksResult, historyResult] = await Promise.allSettled([
-        fetchTabs(),
-        fetchBookmarks(),
-        fetchHistory(),
-      ]);
+      const [tabsResult, bookmarksResult, historyResult] =
+        await Promise.allSettled([
+          fetchTabs(),
+          fetchBookmarks(),
+          fetchHistory(),
+        ]);
 
       const tabs = tabsResult.status === "fulfilled" ? tabsResult.value : [];
-      const bookmarks = bookmarksResult.status === "fulfilled" ? bookmarksResult.value : [];
-      const history = historyResult.status === "fulfilled" ? historyResult.value : [];
+      const bookmarks =
+        bookmarksResult.status === "fulfilled" ? bookmarksResult.value : [];
+      const history =
+        historyResult.status === "fulfilled" ? historyResult.value : [];
 
       // Toast for each partial failure
       if (tabsResult.status === "rejected") {
@@ -61,10 +78,16 @@ export default function BrowserSearch() {
         });
       }
       if (bookmarksResult.status === "rejected") {
-        await showToast({ style: Toast.Style.Failure, title: "Could not load bookmarks" });
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Could not load bookmarks",
+        });
       }
       if (historyResult.status === "rejected") {
-        await showToast({ style: Toast.Style.Failure, title: "Could not load history" });
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Could not load history",
+        });
       }
 
       // All three failed → show empty view with retry
@@ -92,7 +115,11 @@ export default function BrowserSearch() {
         <List.EmptyView
           title="mozeidon not found"
           description="Install mozeidon and make sure it is in your PATH."
-          actions={<ActionPanel><Action title="Retry" onAction={retry} /></ActionPanel>}
+          actions={
+            <ActionPanel>
+              <Action title="Retry" onAction={retry} />
+            </ActionPanel>
+          }
         />
       </List>
     );
@@ -104,7 +131,11 @@ export default function BrowserSearch() {
         <List.EmptyView
           title="No active browser profile"
           description="Is Zen running with the mozeidon extension installed?"
-          actions={<ActionPanel><Action title="Retry" onAction={retry} /></ActionPanel>}
+          actions={
+            <ActionPanel>
+              <Action title="Retry" onAction={retry} />
+            </ActionPanel>
+          }
         />
       </List>
     );
@@ -116,7 +147,11 @@ export default function BrowserSearch() {
         <List.EmptyView
           title="Could not load browser data"
           description="Failed to fetch tabs, bookmarks, and history."
-          actions={<ActionPanel><Action title="Retry" onAction={retry} /></ActionPanel>}
+          actions={
+            <ActionPanel>
+              <Action title="Retry" onAction={retry} />
+            </ActionPanel>
+          }
         />
       </List>
     );
@@ -156,9 +191,17 @@ export default function BrowserSearch() {
 
 function BrowserListItem({ item }: { item: BrowserItem }) {
   const icon =
-    item.type === "tab" ? Icon.Globe : item.type === "bookmark" ? Icon.Bookmark : Icon.Clock;
+    item.type === "tab"
+      ? Icon.Globe
+      : item.type === "bookmark"
+        ? Icon.Bookmark
+        : Icon.Clock;
   const label =
-    item.type === "tab" ? "Tab" : item.type === "bookmark" ? "Bookmark" : "History";
+    item.type === "tab"
+      ? "Tab"
+      : item.type === "bookmark"
+        ? "Bookmark"
+        : "History";
 
   return (
     <List.Item
@@ -178,7 +221,10 @@ function BrowserListItem({ item }: { item: BrowserItem }) {
                     switchTab(item.switchArg!);
                     await closeMainWindow();
                   } catch {
-                    await showToast({ style: Toast.Style.Failure, title: "Failed to switch tab" });
+                    await showToast({
+                      style: Toast.Style.Failure,
+                      title: "Failed to switch tab",
+                    });
                   }
                 }}
               />
@@ -189,7 +235,10 @@ function BrowserListItem({ item }: { item: BrowserItem }) {
                   try {
                     openInBrowser(item.url);
                   } catch {
-                    await showToast({ style: Toast.Style.Failure, title: "Failed to open in browser" });
+                    await showToast({
+                      style: Toast.Style.Failure,
+                      title: "Failed to open in browser",
+                    });
                   }
                 }}
               />
@@ -202,7 +251,10 @@ function BrowserListItem({ item }: { item: BrowserItem }) {
                 try {
                   openInBrowser(item.url);
                 } catch {
-                  await showToast({ style: Toast.Style.Failure, title: "Failed to open in browser" });
+                  await showToast({
+                    style: Toast.Style.Failure,
+                    title: "Failed to open in browser",
+                  });
                 }
               }}
             />
