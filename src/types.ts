@@ -20,6 +20,7 @@ export interface Tab {
   domain: string;
   pinned: boolean;
   active: boolean;
+  lastAccessed: number; // timestamp ms
 }
 
 export interface Bookmark {

@@ -78,12 +78,14 @@ export async function checkProfile(): Promise<boolean> {
 export async function fetchTabs(): Promise<BrowserItem[]> {
   const stdout = await run(["tabs", "get"]);
   const tabs = parseResponse<Tab>(stdout);
-  return tabs.map((tab) => ({
-    type: "tab" as const,
-    title: tab.title || tab.url,
-    url: tab.url,
-    switchArg: `${tab.windowId}:${tab.id}`,
-  }));
+  return tabs
+    .sort((a, b) => b.lastAccessed - a.lastAccessed)
+    .map((tab) => ({
+      type: "tab" as const,
+      title: tab.title || tab.url,
+      url: tab.url,
+      switchArg: `${tab.windowId}:${tab.id}`,
+    }));
 }
 
 export async function fetchBookmarks(): Promise<BrowserItem[]> {
