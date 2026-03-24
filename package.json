@@ -43,7 +43,7 @@
     "testEnvironment": "node",
     "testMatch": ["**/__tests__/**/*.test.ts"],
     "moduleNameMapper": {
-      "@raycast/api": "<rootDir>/src/__mocks__/@raycast/api.ts"
+      "^@raycast/api$": "<rootDir>/src/__mocks__/@raycast/api.ts"
     }
   }
 }
