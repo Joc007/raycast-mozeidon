@@ -131,22 +131,22 @@ export default function BrowserSearch() {
     <List isLoading={isLoading} filtering={true}>
       {tabs.length > 0 && (
         <List.Section title="Tabs">
-          {tabs.map((item, i) => (
-            <BrowserListItem key={`tab-${i}`} item={item} />
+          {tabs.map((item) => (
+            <BrowserListItem key={`${item.type}-${item.url}`} item={item} />
           ))}
         </List.Section>
       )}
       {bookmarks.length > 0 && (
         <List.Section title="Bookmarks">
-          {bookmarks.map((item, i) => (
-            <BrowserListItem key={`bookmark-${i}`} item={item} />
+          {bookmarks.map((item) => (
+            <BrowserListItem key={`${item.type}-${item.url}`} item={item} />
           ))}
         </List.Section>
       )}
       {history.length > 0 && (
         <List.Section title="History">
-          {history.map((item, i) => (
-            <BrowserListItem key={`history-${i}`} item={item} />
+          {history.map((item) => (
+            <BrowserListItem key={`${item.type}-${item.url}`} item={item} />
           ))}
         </List.Section>
       )}
@@ -174,21 +174,37 @@ function BrowserListItem({ item }: { item: BrowserItem }) {
                 title="Switch to Tab"
                 icon={Icon.ArrowRight}
                 onAction={async () => {
-                  switchTab(item.switchArg!);
-                  await closeMainWindow();
+                  try {
+                    switchTab(item.switchArg!);
+                    await closeMainWindow();
+                  } catch {
+                    await showToast({ style: Toast.Style.Failure, title: "Failed to switch tab" });
+                  }
                 }}
               />
               <Action
                 title="Open in Browser"
                 icon={Icon.Globe}
-                onAction={() => openInBrowser(item.url)}
+                onAction={async () => {
+                  try {
+                    openInBrowser(item.url);
+                  } catch {
+                    await showToast({ style: Toast.Style.Failure, title: "Failed to open in browser" });
+                  }
+                }}
               />
             </>
           ) : (
             <Action
               title="Open in Browser"
               icon={Icon.Globe}
-              onAction={() => openInBrowser(item.url)}
+              onAction={async () => {
+                try {
+                  openInBrowser(item.url);
+                } catch {
+                  await showToast({ style: Toast.Style.Failure, title: "Failed to open in browser" });
+                }
+              }}
             />
           )}
           <Action.CopyToClipboard title="Copy URL" content={item.url} />
